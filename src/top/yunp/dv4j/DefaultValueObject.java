@@ -16,21 +16,27 @@ import java.util.Map;
  * @author plter
  * @version 1.0
  */
-public class DefaultValueObject {
+public class DefaultValueObject implements IDefaultValueObject {
 
 
     private Map<String, Method> cachedMethods = new HashMap<>();
     private Method[] methods;
+    private Object target;
 
     public DefaultValueObject() {
-        methods = getClass().getMethods();
+        this.target = this;
     }
+
+    public DefaultValueObject(Object target) {
+        this.target = target;
+    }
+
 
     public Object call(String methodName, String... args) {
         Method m = cachedMethods.get(methodName);
         if (m == null) {
             for (Method method :
-                    methods) {
+                    getMethods()) {
                 if (method.getName().equals(methodName)) {
                     cachedMethods.put(methodName, method);
                     m = method;
@@ -52,12 +58,19 @@ public class DefaultValueObject {
             }
 
             try {
-                return m.invoke(this, params);
+                return m.invoke(target, params);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new CannotCallMethodError(methodName);
             }
         } else {
             throw new MethodNotFoundError(methodName);
         }
+    }
+
+    private Method[] getMethods() {
+        if (methods == null) {
+            methods = target.getClass().getMethods();
+        }
+        return methods;
     }
 }
